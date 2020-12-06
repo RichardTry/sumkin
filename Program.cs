@@ -126,11 +126,11 @@ namespace threads
 
                 if (myTime <= oppTime)
                 {
-                    isFirst = true;
+                    startFirst = true;
                 }
                 else
                 {
-                    isFirst = false;
+                    startFirst = false;
                     using (MemoryMappedViewAccessor writer = sharedMemory.CreateViewAccessor(0, 16))
                     {
                         writer.Write(0, 0.0);
