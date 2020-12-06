@@ -146,7 +146,7 @@ namespace threads
             using (StreamWriter s = new StreamWriter("/home/paxom/monodevelop-projects/file.txt", true))
             {
                 Random rand = new Random();
-                int r = rand.Next(1, 6);
+                int r = rand.Next(1000, 10001);
                 for (int i = 0; i < r; ++i)
                 {
                     s.WriteLine(Thread.CurrentThread.Name + " " + (r - i).ToString());
