@@ -2,6 +2,7 @@
 using System.Threading;
 using System.IO;
 using System.Diagnostics;
+using System.IO.MemoryMappedFiles;
 
 namespace threads
 {
@@ -11,7 +12,9 @@ namespace threads
         static Thread t1;
         static Thread t2;
         static Thread t_sort;
-        static double time0, time1, time2;
+        static double time0, time1, time2, myTime;
+        static bool isFirst = true;
+        static bool startFirst = true;
 
         public static void Main(string[] args)
         {
@@ -34,7 +37,20 @@ namespace threads
         static private void Sorter()
         {
             while (true)
-            {
+            { 
+                Stopwatch watch = Stopwatch.StartNew();
+                MemoryMappedFile sharedMemory = MemoryMappedFile.CreateOrOpen("Shared", 16);
+                if (!startFirst)
+                {
+                    double firstRunned = 0.0;
+                    while (firstRunned == 0.0)
+                    {
+                        using (MemoryMappedViewAccessor reader = sharedMemory.CreateViewAccessor(isFirst ? 8 : 0, 8, MemoryMappedFileAccess.Read))
+                        {
+                            firstRunned = reader.ReadDouble(0);
+                        }
+                    }
+                }
                 if (time0 <= time1 && time0 <= time2)
                 {
                     t0.Start();
@@ -92,13 +108,40 @@ namespace threads
                         t0.Join();
                     }
                 }
-            }
 
+                myTime = watch.Elapsed.TotalMilliseconds;
+                using (MemoryMappedViewAccessor writer = sharedMemory.CreateViewAccessor(isFirst ? 0 : 8, 8))
+                {
+                    writer.Write(0, myTime);
+                }
+
+                double oppTime = 0.0;
+                while (oppTime == 0.0)
+                {
+                    using (MemoryMappedViewAccessor reader = sharedMemory.CreateViewAccessor(isFirst ? 8 : 0, 8, MemoryMappedFileAccess.Read))
+                    {
+                        oppTime = reader.ReadDouble(0);
+                    }
+                }
+
+                if (myTime <= oppTime)
+                {
+                    isFirst = true;
+                }
+                else
+                {
+                    isFirst = false;
+                    using (MemoryMappedViewAccessor writer = sharedMemory.CreateViewAccessor(0, 16))
+                    {
+                        writer.Write(0, 0.0);
+                        writer.Write(8, 0.0);
+                    }
+                }
+            }
         }
 
         static private void T()
         {
-            Console.WriteLine(Thread.CurrentThread.Name + " started");
             Stopwatch watch = Stopwatch.StartNew();
             using (StreamWriter s = new StreamWriter("/home/paxom/monodevelop-projects/file.txt", true))
             {
@@ -125,7 +168,6 @@ namespace threads
                     time2 = watch.Elapsed.TotalMilliseconds;
                     break;
             }
-            Console.WriteLine(Thread.CurrentThread.Name + " ended");
         }
     }
 }
