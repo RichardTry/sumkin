@@ -15,6 +15,7 @@ namespace threads
         static double time0, time1, time2, myTime;
         static bool isFirst = true;
         static bool startFirst = true;
+        static object locker = new object();
 
         public static void Main(string[] args)
         {
@@ -143,6 +144,8 @@ namespace threads
         static private void T()
         {
             Stopwatch watch = Stopwatch.StartNew();
+            lock(loker) 
+            {
             using (StreamWriter s = new StreamWriter("/home/paxom/monodevelop-projects/file.txt", true))
             {
                 Random rand = new Random();
@@ -155,7 +158,7 @@ namespace threads
                 s.Close();
                 s.Dispose();
             }
-
+            }
             switch(Thread.CurrentThread.Name)
             {
                 case "t0":
